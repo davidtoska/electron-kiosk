@@ -1,0 +1,15 @@
+{
+  "name": "electron-iframe",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "npm run build && npm run electron",
+    "electron": "../../electron --url=https://google.com username=david password=secret",
+    "build": "npx tsc"
+  },
+  "devDependencies": {
+    "electron": "^26.0.0",
+    "prettier": "^3.0.2",
+    "typescript": "^5.1.6"
+  }
+}
