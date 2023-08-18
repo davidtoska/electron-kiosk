@@ -5,7 +5,7 @@ import { createConfigDb } from "./etv-config";
 
 const APP_PATH = app.getAppPath();
 const INDEX_PATH = path.join(APP_PATH, "index.html");
-const CONFIG_PATH = path.join(APP_PATH, "etv.config.json");
+const CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
 const DB = createConfigDb(CONFIG_PATH);
 
 const { baseUrl, username, password } = DB.readOrThrow();

@@ -3803,7 +3803,7 @@ var createConfigDb = (path2) => {
 // src/main.ts
 var APP_PATH = import_electron.app.getAppPath();
 var INDEX_PATH = path.join(APP_PATH, "index.html");
-var CONFIG_PATH = path.join(APP_PATH, "etv.config.json");
+var CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
 var DB = createConfigDb(CONFIG_PATH);
 var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
 var program = async (showDevtools = true) => {
