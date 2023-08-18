@@ -1,15 +1,21 @@
 {
   "name": "electron-iframe",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "dist/main.js",
   "scripts": {
+    "clean": "rm -rf dist",
     "dev": "npm run build && npm run electron",
+    "tsc:watch": "tsc --watch --noemit",
     "electron": "../../electron --url=https://google.com username=david password=secret",
-    "build": "npx tsc"
+    "build:renderer": "esbuild src/renderer.ts --bundle --sourcemap --target=chrome58 --outfile=dist/renderer.js",
+    "build:main": "esbuild src/main.ts --bundle --sourcemap --platform=node --external:electron --outfile=dist/main.js",
+    "build": "npm run clean && npm run build:main && npm run build:renderer"
   },
   "devDependencies": {
-    "electron": "^26.0.0",
+    "electron": "26.0.0",
+    "esbuild": "^0.19.2",
     "prettier": "^3.0.2",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "zod": "^3.22.1"
   }
 }

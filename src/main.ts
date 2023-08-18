@@ -1,37 +1,20 @@
 import { app, BrowserWindow, globalShortcut } from "electron";
-import { sendCustomEvent } from "./win-utils";
-const pickArgOrThrow = (argName: string) => {
-  const args = [...process.argv];
-  const searchString = argName + "=";
-  const all = args.filter((a) => a.includes(searchString));
-  const first = all[0];
-  if (!first) {
-    throw new Error("Missing " + argName);
-  }
-  const value = first.split("=")[1];
-  if (typeof value !== "string") {
-    throw new Error("Invalid value of arg: " + argName);
-  }
-  if (value.length === 0) {
-    throw new Error("" + argName + " can not be a empty string;");
-  }
-  return value;
-};
+import { sendCustomEvent } from "./main-event";
+import * as path from "path";
+import { createConfigDb } from "./etv-config";
 
-const url = pickArgOrThrow("url");
-const username = pickArgOrThrow("username");
-const password = pickArgOrThrow("password");
+const APP_PATH = app.getAppPath();
+const INDEX_PATH = path.join(APP_PATH, "index.html");
+const CONFIG_PATH = path.join(APP_PATH, "etv.config.json");
+const DB = createConfigDb(CONFIG_PATH);
 
-const NEXT = { kind: "NEXT" };
-const BACK = { kind: "BACK" };
-const TICK = { kind: "TICK" };
-const INIT = { kind: "INIT", url, username, password };
+const { baseUrl, username, password } = DB.readOrThrow();
 
-const loadUrl = url + "?" + "uid=" + username + "&secret=" + password;
 const program = async (showDevtools = true) => {
   await app.whenReady();
   const win = new BrowserWindow({
     webPreferences: {
+      sandbox: true,
       nodeIntegration: false, // is default value after Electron v5
       contextIsolation: true, // protect against prototype pollution
       // enableRemoteModule: false, // turn off remote
@@ -43,6 +26,7 @@ const program = async (showDevtools = true) => {
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
+
       win.webContents.focus();
     }, 1000);
   });
@@ -51,38 +35,39 @@ const program = async (showDevtools = true) => {
   if (showDevtools) {
     win.webContents.openDevTools();
   }
-  sendCustomEvent(INIT, win);
+
+  sendCustomEvent({ kind: "init", password, baseUrl, username }, win);
 
   win
-    .loadURL(loadUrl)
+    .loadFile(INDEX_PATH)
     .then(() => {
-      console.log("Index.html loaded.");
-      sendCustomEvent(INIT, win);
+      sendCustomEvent({ kind: "init", password, baseUrl, username }, win);
     })
-    .catch((err: unknown) => {
-      console.log(err);
+    .catch((e) => {
+      console.log(e);
     });
 
   globalShortcut.register("CommandOrControl+n", () => {
     console.log("[global shortcut] - n )");
-    sendCustomEvent(NEXT, win);
+    sendCustomEvent({ kind: "next" }, win);
   });
 
   globalShortcut.register("CommandOrControl+b", () => {
     console.log("[global shortcut] - b");
-    sendCustomEvent(BACK, win);
+    sendCustomEvent({ kind: "back" }, win);
   });
 
   await globalShortcut.register("CommandOrControl+q", () => {
     console.log("[global shortcut] - escape");
     app.quit();
   });
+
   setInterval(() => {
-    sendCustomEvent(TICK, win);
+    sendCustomEvent({ kind: "tick" }, win);
   }, 1000);
 };
 
-program(false)
+program(true)
   .then(() => {
     console.log("STARTED.");
   })
