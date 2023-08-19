@@ -3808,10 +3808,16 @@ var DB = createConfigDb(CONFIG_PATH);
 var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
 var program = async (showDevtools = true) => {
   await import_electron.app.whenReady();
-  const a = import_electron.screen.getPrimaryDisplay();
-  console.log(a.bounds);
-  console.log(a.workArea);
+  const display = import_electron.screen.getPrimaryDisplay();
+  const { height, width } = display.bounds;
   const win = new import_electron.BrowserWindow({
+    height,
+    width,
+    resizable: false,
+    frame: false,
+    fullscreenable: true,
+    focusable: true,
+    paintWhenInitiallyHidden: true,
     webPreferences: {
       sandbox: true,
       nodeIntegration: false,
