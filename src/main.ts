@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from "electron";
+import { app, BrowserWindow, globalShortcut, screen } from "electron";
 import { sendCustomEvent } from "./main-event";
 import * as path from "path";
 import { createConfigDb } from "./etv-config";
@@ -12,7 +12,18 @@ const { baseUrl, username, password } = DB.readOrThrow();
 
 const program = async (showDevtools = true) => {
   await app.whenReady();
+  const display = screen.getPrimaryDisplay();
+  const { height, width } = display.bounds;
+  // console.log(a.bounds);
+  // console.log(a.workArea);
   const win = new BrowserWindow({
+    height,
+    width,
+    resizable: false,
+    frame: false,
+    fullscreenable: true,
+    focusable: true,
+    paintWhenInitiallyHidden: true,
     webPreferences: {
       sandbox: true,
       nodeIntegration: false, // is default value after Electron v5
@@ -63,6 +74,7 @@ const program = async (showDevtools = true) => {
   });
 
   setInterval(() => {
+    // win.
     sendCustomEvent({ kind: "tick" }, win);
   }, 1000);
 };
