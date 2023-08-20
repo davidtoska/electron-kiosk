@@ -25,7 +25,7 @@ const program = async (showDevtools = true) => {
     frame: false,
     fullscreenable: true,
     focusable: true,
-    paintWhenInitiallyHidden: true,
+    // paintWhenInitiallyHidden: true,
     webPreferences: {
       sandbox: true,
       nodeIntegration: false, // is default value after Electron v5
@@ -39,9 +39,9 @@ const program = async (showDevtools = true) => {
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
-      win.setKiosk(true);
-      win.setFullScreen(true);
-      win.webContents.focus();
+      // win.setKiosk(true);
+      // win.setFullScreen(true);
+      // win.webContents.focus();
     }, 1000);
   });
   win.show();

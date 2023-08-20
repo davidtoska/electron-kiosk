@@ -3866,7 +3866,7 @@ var program = async (showDevtools = true) => {
     frame: false,
     fullscreenable: true,
     focusable: true,
-    paintWhenInitiallyHidden: true,
+    // paintWhenInitiallyHidden: true,
     webPreferences: {
       sandbox: true,
       nodeIntegration: false,
@@ -3881,9 +3881,6 @@ var program = async (showDevtools = true) => {
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
-      win.setKiosk(true);
-      win.setFullScreen(true);
-      win.webContents.focus();
     }, 1e3);
   });
   win.show();
