@@ -3694,11 +3694,138 @@
     }
   }, ONLINE_TICK_RATE);
 
+  // src/timestamp.ts
+  var timestamp = z.number().positive("A timestamp must be positive").brand("TIMESTAMP");
+  var Timestamp;
+  ((Timestamp2) => {
+    Timestamp2.now = () => Date.now();
+    Timestamp2.diff = (first, last) => {
+      const result = Math.abs(first - last);
+      return result;
+    };
+    Timestamp2.diffNow = (timestamp2) => {
+      return (0, Timestamp2.diff)(timestamp2, (0, Timestamp2.now)());
+    };
+    Timestamp2.parse = (datetime) => {
+      if (typeof datetime !== "string")
+        return null;
+      const maybeNumber = Date.parse(datetime);
+      if (isNaN(maybeNumber)) {
+        return null;
+      }
+      if (maybeNumber < 0) {
+        return null;
+      }
+      return new Date(maybeNumber);
+    };
+  })(Timestamp || (Timestamp = {}));
+
+  // src/Iframe.ts
+  var ContentWindowOk = z.object({
+    isOk: z.literal(true),
+    timestamp
+  });
+  var ContentWindowError = z.object({
+    isOk: z.literal(false),
+    timestamp,
+    message: z.string()
+  });
+  var ContentWindowMessage = z.union([ContentWindowOk, ContentWindowError]);
+  var IframeState = class {
+    constructor() {
+      this.LOAD_TIMEOUT = 6e3;
+      this.kind = "no-url";
+      this.transitionAt = Timestamp.now();
+    }
+    doReload() {
+      if (this.kind !== "loading")
+        return false;
+      const loadingTime = Timestamp.diffNow(this.transitionAt);
+      return loadingTime > this.LOAD_TIMEOUT;
+    }
+    setState(state) {
+      this.kind = state;
+      this.transitionAt = Timestamp.now();
+    }
+  };
+  var Iframe = class {
+    constructor(onEventHandler) {
+      this.TAG = "[ Iframe ]:";
+      this.el = document.createElement("iframe");
+      this.state = new IframeState();
+      this.lastMessage = null;
+      this._onEventHandler = onEventHandler;
+      this._onEventHandler("CONSTRUCTOR");
+      this.el.loading = "auto";
+      this.el.classList.add("fullscreen", "iframe");
+      const initialLoadTicker = window.setInterval(() => {
+        if (this.state.doReload()) {
+          this.reloadUrl();
+          console.log(this.TAG + "Loading timed out, will reload url");
+        } else {
+        }
+      }, 300);
+      window.addEventListener("message", (ev) => {
+        const parsed = ContentWindowMessage.safeParse(ev.data);
+        if (parsed.success) {
+          const message = parsed.data;
+          if (message.isOk && this.lastMessage === null) {
+            this.lastMessage = message;
+            this.state.setState("loaded");
+            window.clearInterval(initialLoadTicker);
+            console.groupCollapsed(this.TAG + " IFRAME WEB CONTENT LOADED.");
+            console.log(message);
+            console.log("clearInterval(initialLoadTicker)");
+            console.groupEnd();
+          }
+        } else {
+          console.log(parsed.error);
+        }
+      });
+      this.el.onloadstart = (ev) => {
+        this._onEventHandler(ev);
+      };
+      this.el.onloadstart = (ev) => {
+        this._onEventHandler(ev);
+      };
+      this.el.onload = (ev) => {
+        this._onEventHandler(ev);
+      };
+      this.el.onerror = (ev) => {
+        this._onEventHandler(ev);
+      };
+    }
+    sendMessage(message) {
+      var _a;
+      (_a = this.el.contentWindow) == null ? void 0 : _a.postMessage(message, "*");
+    }
+    loadUrl(url) {
+      this.state.setState("loading");
+      this.el.src = url;
+    }
+    reloadUrl() {
+      const url = this.el.src;
+      console.groupCollapsed(this.TAG + " Iframe loading timeout. RELOADING!!");
+      console.log(url);
+      console.groupEnd();
+      this.el.src = "";
+      this.state.setState("loading");
+      setTimeout(() => {
+        this.el.src = url;
+      }, 10);
+    }
+    getHtmlElement() {
+      return this.el;
+    }
+  };
+
   // src/renderer.ts
-  var iframe = null;
   var config = null;
   var initialOnlineStable = false;
   var TICK_RATE = 1e3;
+  var iframe = new Iframe((ev) => {
+    console.log(ev);
+  });
   onOnlineStatusChange((onlineEvent) => {
     console.log(status);
     switch (onlineEvent.kind) {
@@ -3711,22 +3838,15 @@
         break;
     }
   });
-  var initIframe = (config2) => {
-    iframe = document.createElement("iframe");
-    const { baseUrl: baseUrl2, username: username2, password: password2 } = config2;
-    const loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
-    iframe.src = loadUrl;
-    iframe.classList.add("fullscreen", "iframe");
-    document.body.appendChild(iframe);
-  };
   var initInterval = window.setInterval(() => {
-    if (iframe)
-      return;
     if (!config)
       return;
     if (!initialOnlineStable)
       return;
-    initIframe(config);
+    const { baseUrl: baseUrl2, username: username2, password: password2 } = config;
+    const loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
+    iframe.loadUrl(loadUrl);
+    document.body.appendChild(iframe.getHtmlElement());
     window.clearInterval(initInterval);
   }, TICK_RATE);
   var mainEventHandler = (event) => {

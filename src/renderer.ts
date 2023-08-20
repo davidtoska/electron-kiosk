@@ -1,11 +1,14 @@
 import { EVENTS_FROM_MAIN_CHANNEL, MainEvent } from "./main-event";
 import { onOnlineStatusChange } from "./onOnlineStatusChange";
 import { Config } from "./types";
-let iframe: HTMLIFrameElement | null = null;
+import { Iframe } from "./Iframe";
 let config: Config | null = null;
 let initialOnlineStable = false;
-// let isOnline = false;
 const TICK_RATE = 1000;
+
+const iframe = new Iframe((ev) => {
+  console.log(ev);
+});
 
 onOnlineStatusChange((onlineEvent) => {
   console.log(status);
@@ -20,19 +23,16 @@ onOnlineStatusChange((onlineEvent) => {
   }
 });
 
-const initIframe = (config: Config) => {
-  iframe = document.createElement("iframe");
-  const { baseUrl, username, password } = config;
-  const loadUrl = baseUrl + "?" + "uid=" + username + "&secret=" + password;
-  iframe.src = loadUrl;
-  iframe.classList.add("fullscreen", "iframe");
-  document.body.appendChild(iframe);
-};
 const initInterval = window.setInterval(() => {
-  if (iframe) return;
   if (!config) return;
   if (!initialOnlineStable) return;
-  initIframe(config);
+  const { baseUrl, username, password } = config;
+  const loadUrl = baseUrl + "?" + "uid=" + username + "&secret=" + password;
+  // const testIframe = "TestIframe.html"
+  iframe.loadUrl(loadUrl);
+  document.body.appendChild(iframe.getHtmlElement());
+
+  // initIframe(config);
   window.clearInterval(initInterval);
 }, TICK_RATE);
 

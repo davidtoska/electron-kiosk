@@ -3800,15 +3800,64 @@ var createConfigDb = (path2) => {
   };
 };
 
+// src/timestamp.ts
+var timestamp = z.number().positive("A timestamp must be positive").brand("TIMESTAMP");
+var Timestamp;
+((Timestamp2) => {
+  Timestamp2.now = () => Date.now();
+  Timestamp2.diff = (first, last) => {
+    const result = Math.abs(first - last);
+    return result;
+  };
+  Timestamp2.diffNow = (timestamp2) => {
+    return (0, Timestamp2.diff)(timestamp2, (0, Timestamp2.now)());
+  };
+  Timestamp2.parse = (datetime) => {
+    if (typeof datetime !== "string")
+      return null;
+    const maybeNumber = Date.parse(datetime);
+    if (isNaN(maybeNumber)) {
+      return null;
+    }
+    if (maybeNumber < 0) {
+      return null;
+    }
+    return new Date(maybeNumber);
+  };
+})(Timestamp || (Timestamp = {}));
+
+// src/clock.ts
+var ClockImpl = class {
+  constructor() {
+    this.t0 = Timestamp.now();
+  }
+  sinceT0Sec() {
+    return this.sinceT0Milli() / 1e3;
+  }
+  sinceT0SecAsString() {
+    const sec = this.sinceT0Sec();
+    return sec + " s.";
+  }
+  sinceT0Milli() {
+    return Timestamp.diffNow(this.t0);
+  }
+  sinceT0MilliAsString() {
+    return Timestamp.diffNow(this.t0) + " ms.";
+  }
+};
+var Clock = new ClockImpl();
+
 // src/main.ts
 var APP_PATH = import_electron.app.getAppPath();
 var INDEX_PATH = path.join(APP_PATH, "index.html");
 var CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
 var DB = createConfigDb(CONFIG_PATH);
+var TAG = "[ MAIN ]: ";
 var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
 var program = async (showDevtools = true) => {
   await import_electron.app.whenReady();
-  const display = import_electron.screen.getPrimaryDisplay();
+  const { screen } = require("electron");
+  const display = screen.getPrimaryDisplay();
   const { height, width } = display.bounds;
   const win = new import_electron.BrowserWindow({
     height,
@@ -3832,6 +3881,8 @@ var program = async (showDevtools = true) => {
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
+      win.setKiosk(true);
+      win.setFullScreen(true);
       win.webContents.focus();
     }, 1e3);
   });
@@ -3853,7 +3904,7 @@ var program = async (showDevtools = true) => {
     console.log("[global shortcut] - b");
     sendCustomEvent({ kind: "back" }, win);
   });
-  await import_electron.globalShortcut.register("CommandOrControl+q", () => {
+  import_electron.globalShortcut.register("CommandOrControl+q", () => {
     console.log("[global shortcut] - escape");
     import_electron.app.quit();
   });
@@ -3863,6 +3914,8 @@ var program = async (showDevtools = true) => {
 };
 program(true).then(() => {
   console.log("STARTED.");
+  const loadTime = Clock.sinceT0MilliAsString();
+  console.log(TAG + " program load: " + loadTime);
 }).catch((e) => {
   console.log(e);
 });

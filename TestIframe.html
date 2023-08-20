@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <script>
+      window.addEventListener("message", (m) => {
+        console.log(m);
+      });
+      setInterval(() => {
+        window.parent.postMessage({ isOk: true, timestamp: Date.now() }, "*");
+      }, 3000);
+    </script>
+    <h1>IFRAME TESTING MESSAGES!!</h1>
+  </body>
+</html>

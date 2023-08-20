@@ -1,21 +1,23 @@
-import { app, BrowserWindow, globalShortcut, screen } from "electron";
+import { app, BrowserWindow, globalShortcut } from "electron";
 import { sendCustomEvent } from "./main-event";
 import * as path from "path";
 import { createConfigDb } from "./etv-config";
+
+import { Clock } from "./clock";
 
 const APP_PATH = app.getAppPath();
 const INDEX_PATH = path.join(APP_PATH, "index.html");
 const CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
 const DB = createConfigDb(CONFIG_PATH);
+const TAG = "[ MAIN ]: ";
 
 const { baseUrl, username, password } = DB.readOrThrow();
 
 const program = async (showDevtools = true) => {
   await app.whenReady();
+  const { screen } = require("electron");
   const display = screen.getPrimaryDisplay();
   const { height, width } = display.bounds;
-  // console.log(a.bounds);
-  // console.log(a.workArea);
   const win = new BrowserWindow({
     height,
     width,
@@ -37,7 +39,8 @@ const program = async (showDevtools = true) => {
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
-
+      win.setKiosk(true);
+      win.setFullScreen(true);
       win.webContents.focus();
     }, 1000);
   });
@@ -68,13 +71,12 @@ const program = async (showDevtools = true) => {
     sendCustomEvent({ kind: "back" }, win);
   });
 
-  await globalShortcut.register("CommandOrControl+q", () => {
+  globalShortcut.register("CommandOrControl+q", () => {
     console.log("[global shortcut] - escape");
     app.quit();
   });
 
   setInterval(() => {
-    // win.
     sendCustomEvent({ kind: "tick" }, win);
   }, 1000);
 };
@@ -82,6 +84,8 @@ const program = async (showDevtools = true) => {
 program(true)
   .then(() => {
     console.log("STARTED.");
+    const loadTime = Clock.sinceT0MilliAsString();
+    console.log(TAG + " program load: " + loadTime);
   })
   .catch((e) => {
     console.log(e);
