@@ -407,18 +407,18 @@
       if (this.value !== "aborted")
         this.value = "aborted";
     }
-    static mergeArray(status2, results) {
+    static mergeArray(status, results) {
       const arrayValue = [];
       for (const s of results) {
         if (s.status === "aborted")
           return INVALID;
         if (s.status === "dirty")
-          status2.dirty();
+          status.dirty();
         arrayValue.push(s.value);
       }
-      return { status: status2.value, value: arrayValue };
+      return { status: status.value, value: arrayValue };
     }
-    static async mergeObjectAsync(status2, pairs) {
+    static async mergeObjectAsync(status, pairs) {
       const syncPairs = [];
       for (const pair of pairs) {
         syncPairs.push({
@@ -426,9 +426,9 @@
           value: await pair.value
         });
       }
-      return _ParseStatus.mergeObjectSync(status2, syncPairs);
+      return _ParseStatus.mergeObjectSync(status, syncPairs);
     }
-    static mergeObjectSync(status2, pairs) {
+    static mergeObjectSync(status, pairs) {
       const finalObject = {};
       for (const pair of pairs) {
         const { key, value } = pair;
@@ -437,14 +437,14 @@
         if (value.status === "aborted")
           return INVALID;
         if (key.status === "dirty")
-          status2.dirty();
+          status.dirty();
         if (value.status === "dirty")
-          status2.dirty();
+          status.dirty();
         if (key.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
           finalObject[key.value] = value.value;
         }
       }
-      return { status: status2.value, value: finalObject };
+      return { status: status.value, value: finalObject };
     }
   };
   var INVALID = Object.freeze({
@@ -829,7 +829,7 @@
         );
         return INVALID;
       }
-      const status2 = new ParseStatus();
+      const status = new ParseStatus();
       let ctx = void 0;
       for (const check of this._def.checks) {
         if (check.kind === "min") {
@@ -843,7 +843,7 @@
               exact: false,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "max") {
           if (input.data.length > check.value) {
@@ -856,7 +856,7 @@
               exact: false,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "length") {
           const tooBig = input.data.length > check.value;
@@ -882,7 +882,7 @@
                 message: check.message
               });
             }
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "email") {
           if (!emailRegex.test(input.data)) {
@@ -892,7 +892,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "emoji") {
           if (!emojiRegex.test(input.data)) {
@@ -902,7 +902,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "uuid") {
           if (!uuidRegex.test(input.data)) {
@@ -912,7 +912,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "cuid") {
           if (!cuidRegex.test(input.data)) {
@@ -922,7 +922,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "cuid2") {
           if (!cuid2Regex.test(input.data)) {
@@ -932,7 +932,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "ulid") {
           if (!ulidRegex.test(input.data)) {
@@ -942,7 +942,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "url") {
           try {
@@ -954,7 +954,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "regex") {
           check.regex.lastIndex = 0;
@@ -966,7 +966,7 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "trim") {
           input.data = input.data.trim();
@@ -978,7 +978,7 @@
               validation: { includes: check.value, position: check.position },
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "toLowerCase") {
           input.data = input.data.toLowerCase();
@@ -992,7 +992,7 @@
               validation: { startsWith: check.value },
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "endsWith") {
           if (!input.data.endsWith(check.value)) {
@@ -1002,7 +1002,7 @@
               validation: { endsWith: check.value },
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "datetime") {
           const regex = datetimeRegex(check);
@@ -1013,7 +1013,7 @@
               validation: "datetime",
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "ip") {
           if (!isValidIP(input.data, check.version)) {
@@ -1023,13 +1023,13 @@
               code: ZodIssueCode.invalid_string,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else {
           util.assertNever(check);
         }
       }
-      return { status: status2.value, value: input.data };
+      return { status: status.value, value: input.data };
     }
     _addCheck(check) {
       return new _ZodString(__spreadProps(__spreadValues({}, this._def), {
@@ -1205,7 +1205,7 @@
         return INVALID;
       }
       let ctx = void 0;
-      const status2 = new ParseStatus();
+      const status = new ParseStatus();
       for (const check of this._def.checks) {
         if (check.kind === "int") {
           if (!util.isInteger(input.data)) {
@@ -1216,7 +1216,7 @@
               received: "float",
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "min") {
           const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
@@ -1230,7 +1230,7 @@
               exact: false,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "max") {
           const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
@@ -1244,7 +1244,7 @@
               exact: false,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "multipleOf") {
           if (floatSafeRemainder(input.data, check.value) !== 0) {
@@ -1254,7 +1254,7 @@
               multipleOf: check.value,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "finite") {
           if (!Number.isFinite(input.data)) {
@@ -1263,13 +1263,13 @@
               code: ZodIssueCode.not_finite,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else {
           util.assertNever(check);
         }
       }
-      return { status: status2.value, value: input.data };
+      return { status: status.value, value: input.data };
     }
     gte(value, message) {
       return this.setLimit("min", value, true, errorUtil.toString(message));
@@ -1432,7 +1432,7 @@
         return INVALID;
       }
       let ctx = void 0;
-      const status2 = new ParseStatus();
+      const status = new ParseStatus();
       for (const check of this._def.checks) {
         if (check.kind === "min") {
           const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
@@ -1445,7 +1445,7 @@
               inclusive: check.inclusive,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "max") {
           const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
@@ -1458,7 +1458,7 @@
               inclusive: check.inclusive,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "multipleOf") {
           if (input.data % check.value !== BigInt(0)) {
@@ -1468,13 +1468,13 @@
               multipleOf: check.value,
               message: check.message
             });
-            status2.dirty();
+            status.dirty();
           }
         } else {
           util.assertNever(check);
         }
       }
-      return { status: status2.value, value: input.data };
+      return { status: status.value, value: input.data };
     }
     gte(value, message) {
       return this.setLimit("min", value, true, errorUtil.toString(message));
@@ -1620,7 +1620,7 @@
         });
         return INVALID;
       }
-      const status2 = new ParseStatus();
+      const status = new ParseStatus();
       let ctx = void 0;
       for (const check of this._def.checks) {
         if (check.kind === "min") {
@@ -1634,7 +1634,7 @@
               minimum: check.value,
               type: "date"
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (check.kind === "max") {
           if (input.data.getTime() > check.value) {
@@ -1647,14 +1647,14 @@
               maximum: check.value,
               type: "date"
             });
-            status2.dirty();
+            status.dirty();
           }
         } else {
           util.assertNever(check);
         }
       }
       return {
-        status: status2.value,
+        status: status.value,
         value: new Date(input.data.getTime())
       };
     }
@@ -1831,7 +1831,7 @@
   };
   var ZodArray = class _ZodArray extends ZodType {
     _parse(input) {
-      const { ctx, status: status2 } = this._processInputParams(input);
+      const { ctx, status } = this._processInputParams(input);
       const def = this._def;
       if (ctx.parsedType !== ZodParsedType.array) {
         addIssueToContext(ctx, {
@@ -1854,7 +1854,7 @@
             exact: true,
             message: def.exactLength.message
           });
-          status2.dirty();
+          status.dirty();
         }
       }
       if (def.minLength !== null) {
@@ -1867,7 +1867,7 @@
             exact: false,
             message: def.minLength.message
           });
-          status2.dirty();
+          status.dirty();
         }
       }
       if (def.maxLength !== null) {
@@ -1880,20 +1880,20 @@
             exact: false,
             message: def.maxLength.message
           });
-          status2.dirty();
+          status.dirty();
         }
       }
       if (ctx.common.async) {
         return Promise.all([...ctx.data].map((item, i) => {
           return def.type._parseAsync(new ParseInputLazyPath(ctx, item, ctx.path, i));
         })).then((result2) => {
-          return ParseStatus.mergeArray(status2, result2);
+          return ParseStatus.mergeArray(status, result2);
         });
       }
       const result = [...ctx.data].map((item, i) => {
         return def.type._parseSync(new ParseInputLazyPath(ctx, item, ctx.path, i));
       });
-      return ParseStatus.mergeArray(status2, result);
+      return ParseStatus.mergeArray(status, result);
     }
     get element() {
       return this._def.type;
@@ -1975,7 +1975,7 @@
         });
         return INVALID;
       }
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       const { shape, keys: shapeKeys } = this._getCached();
       const extraKeys = [];
       if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
@@ -2010,7 +2010,7 @@
               code: ZodIssueCode.unrecognized_keys,
               keys: extraKeys
             });
-            status2.dirty();
+            status.dirty();
           }
         } else if (unknownKeys === "strip")
           ;
@@ -2044,10 +2044,10 @@
           }
           return syncPairs;
         }).then((syncPairs) => {
-          return ParseStatus.mergeObjectSync(status2, syncPairs);
+          return ParseStatus.mergeObjectSync(status, syncPairs);
         });
       } else {
-        return ParseStatus.mergeObjectSync(status2, pairs);
+        return ParseStatus.mergeObjectSync(status, pairs);
       }
     }
     get shape() {
@@ -2491,7 +2491,7 @@
   }
   var ZodIntersection = class extends ZodType {
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       const handleParsed = (parsedLeft, parsedRight) => {
         if (isAborted(parsedLeft) || isAborted(parsedRight)) {
           return INVALID;
@@ -2504,9 +2504,9 @@
           return INVALID;
         }
         if (isDirty(parsedLeft) || isDirty(parsedRight)) {
-          status2.dirty();
+          status.dirty();
         }
-        return { status: status2.value, value: merged.data };
+        return { status: status.value, value: merged.data };
       };
       if (ctx.common.async) {
         return Promise.all([
@@ -2543,7 +2543,7 @@
   };
   var ZodTuple = class _ZodTuple extends ZodType {
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       if (ctx.parsedType !== ZodParsedType.array) {
         addIssueToContext(ctx, {
           code: ZodIssueCode.invalid_type,
@@ -2571,7 +2571,7 @@
           exact: false,
           type: "array"
         });
-        status2.dirty();
+        status.dirty();
       }
       const items = [...ctx.data].map((item, itemIndex) => {
         const schema = this._def.items[itemIndex] || this._def.rest;
@@ -2581,10 +2581,10 @@
       }).filter((x) => !!x);
       if (ctx.common.async) {
         return Promise.all(items).then((results) => {
-          return ParseStatus.mergeArray(status2, results);
+          return ParseStatus.mergeArray(status, results);
         });
       } else {
-        return ParseStatus.mergeArray(status2, items);
+        return ParseStatus.mergeArray(status, items);
       }
     }
     get items() {
@@ -2614,7 +2614,7 @@
       return this._def.valueType;
     }
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       if (ctx.parsedType !== ZodParsedType.object) {
         addIssueToContext(ctx, {
           code: ZodIssueCode.invalid_type,
@@ -2633,9 +2633,9 @@
         });
       }
       if (ctx.common.async) {
-        return ParseStatus.mergeObjectAsync(status2, pairs);
+        return ParseStatus.mergeObjectAsync(status, pairs);
       } else {
-        return ParseStatus.mergeObjectSync(status2, pairs);
+        return ParseStatus.mergeObjectSync(status, pairs);
       }
     }
     get element() {
@@ -2664,7 +2664,7 @@
       return this._def.valueType;
     }
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       if (ctx.parsedType !== ZodParsedType.map) {
         addIssueToContext(ctx, {
           code: ZodIssueCode.invalid_type,
@@ -2691,11 +2691,11 @@
               return INVALID;
             }
             if (key.status === "dirty" || value.status === "dirty") {
-              status2.dirty();
+              status.dirty();
             }
             finalMap.set(key.value, value.value);
           }
-          return { status: status2.value, value: finalMap };
+          return { status: status.value, value: finalMap };
         });
       } else {
         const finalMap = /* @__PURE__ */ new Map();
@@ -2706,11 +2706,11 @@
             return INVALID;
           }
           if (key.status === "dirty" || value.status === "dirty") {
-            status2.dirty();
+            status.dirty();
           }
           finalMap.set(key.value, value.value);
         }
-        return { status: status2.value, value: finalMap };
+        return { status: status.value, value: finalMap };
       }
     }
   };
@@ -2723,7 +2723,7 @@
   };
   var ZodSet = class _ZodSet extends ZodType {
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       if (ctx.parsedType !== ZodParsedType.set) {
         addIssueToContext(ctx, {
           code: ZodIssueCode.invalid_type,
@@ -2743,7 +2743,7 @@
             exact: false,
             message: def.minSize.message
           });
-          status2.dirty();
+          status.dirty();
         }
       }
       if (def.maxSize !== null) {
@@ -2756,7 +2756,7 @@
             exact: false,
             message: def.maxSize.message
           });
-          status2.dirty();
+          status.dirty();
         }
       }
       const valueType = this._def.valueType;
@@ -2766,10 +2766,10 @@
           if (element.status === "aborted")
             return INVALID;
           if (element.status === "dirty")
-            status2.dirty();
+            status.dirty();
           parsedSet.add(element.value);
         }
-        return { status: status2.value, value: parsedSet };
+        return { status: status.value, value: parsedSet };
       }
       const elements = [...ctx.data.values()].map((item, i) => valueType._parse(new ParseInputLazyPath(ctx, item, ctx.path, i)));
       if (ctx.common.async) {
@@ -3087,15 +3087,15 @@
       return this._def.schema._def.typeName === ZodFirstPartyTypeKind.ZodEffects ? this._def.schema.sourceType() : this._def.schema;
     }
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       const effect = this._def.effect || null;
       const checkCtx = {
         addIssue: (arg) => {
           addIssueToContext(ctx, arg);
           if (arg.fatal) {
-            status2.abort();
+            status.abort();
           } else {
-            status2.dirty();
+            status.dirty();
           }
         },
         get path() {
@@ -3147,17 +3147,17 @@
           if (inner.status === "aborted")
             return INVALID;
           if (inner.status === "dirty")
-            status2.dirty();
+            status.dirty();
           executeRefinement(inner.value);
-          return { status: status2.value, value: inner.value };
+          return { status: status.value, value: inner.value };
         } else {
           return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((inner) => {
             if (inner.status === "aborted")
               return INVALID;
             if (inner.status === "dirty")
-              status2.dirty();
+              status.dirty();
             return executeRefinement(inner.value).then(() => {
-              return { status: status2.value, value: inner.value };
+              return { status: status.value, value: inner.value };
             });
           });
         }
@@ -3175,12 +3175,12 @@
           if (result instanceof Promise) {
             throw new Error(`Asynchronous transform encountered during synchronous parse operation. Use .parseAsync instead.`);
           }
-          return { status: status2.value, value: result };
+          return { status: status.value, value: result };
         } else {
           return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base) => {
             if (!isValid(base))
               return base;
-            return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({ status: status2.value, value: result }));
+            return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({ status: status.value, value: result }));
           });
         }
       }
@@ -3346,7 +3346,7 @@
   };
   var ZodPipeline = class _ZodPipeline extends ZodType {
     _parse(input) {
-      const { status: status2, ctx } = this._processInputParams(input);
+      const { status, ctx } = this._processInputParams(input);
       if (ctx.common.async) {
         const handleAsync = async () => {
           const inResult = await this._def.in._parseAsync({
@@ -3357,7 +3357,7 @@
           if (inResult.status === "aborted")
             return INVALID;
           if (inResult.status === "dirty") {
-            status2.dirty();
+            status.dirty();
             return DIRTY(inResult.value);
           } else {
             return this._def.out._parseAsync({
@@ -3377,7 +3377,7 @@
         if (inResult.status === "aborted")
           return INVALID;
         if (inResult.status === "dirty") {
-          status2.dirty();
+          status.dirty();
           return {
             status: "dirty",
             value: inResult.value
@@ -3662,7 +3662,7 @@
   var isOnline = () => window.navigator.onLine;
   var onlineCount = 0;
   var tickCount = 0;
-  var ONLINE_TICK_RATE = 300;
+  var ONLINE_TICK_RATE = 600;
   var ONLINE_SETTELED_TRESHOLD = 5;
   var _callback = (event) => {
     console.log("NOBODY IS LISTENING FOR ONLINE CHANGE: STATUS", event);
@@ -3823,11 +3823,9 @@
   var config = null;
   var initialOnlineStable = false;
   var TICK_RATE = 1e3;
-  var iframe = new Iframe((ev) => {
-    console.log(ev);
-  });
+  var iframe = null;
   onOnlineStatusChange((onlineEvent) => {
-    console.log(status);
+    console.log(onlineEvent);
     switch (onlineEvent.kind) {
       case "initial-online":
         initialOnlineStable = true;
@@ -3845,6 +3843,9 @@
       return;
     const { baseUrl: baseUrl2, username: username2, password: password2 } = config;
     const loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
+    iframe = new Iframe((ev) => {
+      console.log(ev);
+    });
     iframe.loadUrl(loadUrl);
     document.body.appendChild(iframe.getHtmlElement());
     window.clearInterval(initInterval);

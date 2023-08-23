@@ -3854,11 +3854,24 @@ var CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
 var DB = createConfigDb(CONFIG_PATH);
 var TAG = "[ MAIN ]: ";
 var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
+var loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
+var createNrkWindow = (parent) => {
+  const win = new import_electron.BrowserWindow({
+    height: 800,
+    width: 1200,
+    backgroundColor: "red",
+    show: false,
+    parent
+  });
+  return win;
+};
 var program = async (showDevtools = true) => {
   await import_electron.app.whenReady();
   const { screen } = require("electron");
   const display = screen.getPrimaryDisplay();
   const { height, width } = display.bounds;
+  const allDisplays = screen.getAllDisplays();
+  console.log(allDisplays);
   const win = new import_electron.BrowserWindow({
     height,
     width,
@@ -3866,17 +3879,17 @@ var program = async (showDevtools = true) => {
     frame: false,
     fullscreenable: true,
     focusable: true,
-    // paintWhenInitiallyHidden: true,
+    // backgroundColor: "black",
     webPreferences: {
-      sandbox: true,
+      // sandbox: true,
       nodeIntegration: false,
       // is default value after Electron v5
       contextIsolation: true
       // protect against prototype pollution
       // enableRemoteModule: false, // turn off remote
-    },
-    kiosk: true,
-    fullscreen: true
+    }
+    // kiosk: true,
+    // fullscreen: true,
   });
   win.on("show", () => {
     setTimeout(() => {
@@ -3884,6 +3897,13 @@ var program = async (showDevtools = true) => {
     }, 1e3);
   });
   win.show();
+  const win2 = createNrkWindow(win);
+  setTimeout(() => {
+    win2.show();
+    setTimeout(() => {
+      win2.loadURL(loadUrl, {});
+    }, 5e3);
+  }, 1e4);
   if (showDevtools) {
     win.webContents.openDevTools();
   }

@@ -6,12 +6,13 @@ let config: Config | null = null;
 let initialOnlineStable = false;
 const TICK_RATE = 1000;
 
-const iframe = new Iframe((ev) => {
-  console.log(ev);
-});
+let iframe: Iframe | null = null;
+// const iframe = new Iframe((ev) => {
+//   console.log(ev);
+// });
 
 onOnlineStatusChange((onlineEvent) => {
-  console.log(status);
+  console.log(onlineEvent);
   switch (onlineEvent.kind) {
     case "initial-online":
       initialOnlineStable = true;
@@ -29,6 +30,10 @@ const initInterval = window.setInterval(() => {
   const { baseUrl, username, password } = config;
   const loadUrl = baseUrl + "?" + "uid=" + username + "&secret=" + password;
   // const testIframe = "TestIframe.html"
+  iframe = new Iframe((ev) => {
+    console.log(ev);
+  });
+
   iframe.loadUrl(loadUrl);
   document.body.appendChild(iframe.getHtmlElement());
 

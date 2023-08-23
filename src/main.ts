@@ -12,12 +12,25 @@ const DB = createConfigDb(CONFIG_PATH);
 const TAG = "[ MAIN ]: ";
 
 const { baseUrl, username, password } = DB.readOrThrow();
-
+const loadUrl = baseUrl + "?" + "uid=" + username + "&secret=" + password;
+const createNrkWindow = (parent: BrowserWindow) => {
+  const win = new BrowserWindow({
+    height: 800,
+    width: 1200,
+    backgroundColor: "red",
+    show: false,
+    parent,
+  });
+  return win;
+};
 const program = async (showDevtools = true) => {
   await app.whenReady();
   const { screen } = require("electron");
   const display = screen.getPrimaryDisplay();
   const { height, width } = display.bounds;
+  const allDisplays = screen.getAllDisplays();
+  console.log(allDisplays);
+  // const window2 = new BrowserWindow({600, width});
   const win = new BrowserWindow({
     height,
     width,
@@ -25,27 +38,34 @@ const program = async (showDevtools = true) => {
     frame: false,
     fullscreenable: true,
     focusable: true,
-    // paintWhenInitiallyHidden: true,
+    // backgroundColor: "black",
     webPreferences: {
-      sandbox: true,
+      // sandbox: true,
       nodeIntegration: false, // is default value after Electron v5
       contextIsolation: true, // protect against prototype pollution
       // enableRemoteModule: false, // turn off remote
     },
-    kiosk: true,
-    fullscreen: true,
+    // kiosk: true,
+    // fullscreen: true,
   });
   // win.webContents.focus();
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
+
       // win.setKiosk(true);
       // win.setFullScreen(true);
       // win.webContents.focus();
     }, 1000);
   });
   win.show();
-
+  const win2 = createNrkWindow(win);
+  setTimeout(() => {
+    win2.show();
+    setTimeout(() => {
+      win2.loadURL(loadUrl, {});
+    }, 5000);
+  }, 10000);
   if (showDevtools) {
     win.webContents.openDevTools();
   }

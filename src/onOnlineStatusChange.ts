@@ -1,7 +1,7 @@
 export const isOnline = () => window.navigator.onLine;
 let onlineCount = 0;
 let tickCount = 0;
-const ONLINE_TICK_RATE = 300;
+const ONLINE_TICK_RATE = 600;
 const ONLINE_SETTELED_TRESHOLD = 5;
 
 type OnlineEvent =
