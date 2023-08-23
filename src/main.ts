@@ -1,9 +1,10 @@
-import { app, BrowserWindow, globalShortcut } from "electron";
+import { app, globalShortcut } from "electron";
 import { sendCustomEvent } from "./main-event";
 import * as path from "path";
-import { createConfigDb } from "./etv-config";
+import { createConfigDb } from "./main/etv-config";
 
 import { Clock } from "./clock";
+import { createOfflineWindow, createOnlineWindow } from "./BrowserWindows";
 
 const APP_PATH = app.getAppPath();
 const INDEX_PATH = path.join(APP_PATH, "index.html");
@@ -13,42 +14,22 @@ const TAG = "[ MAIN ]: ";
 
 const { baseUrl, username, password } = DB.readOrThrow();
 const loadUrl = baseUrl + "?" + "uid=" + username + "&secret=" + password;
-const createNrkWindow = (parent: BrowserWindow) => {
-  const win = new BrowserWindow({
-    height: 800,
-    width: 1200,
-    backgroundColor: "red",
-    show: false,
-    parent,
-  });
-  return win;
-};
+
 const program = async (showDevtools = true) => {
-  await app.whenReady();
+  try {
+    await app.whenReady();
+  } catch (e) {
+    console.log(e);
+  }
+
   const { screen } = require("electron");
-  const display = screen.getPrimaryDisplay();
-  const { height, width } = display.bounds;
+  // const display = screen.getPrimaryDisplay();
+  // const { height, width } = display.bounds;
   const allDisplays = screen.getAllDisplays();
   console.log(allDisplays);
-  // const window2 = new BrowserWindow({600, width});
-  const win = new BrowserWindow({
-    height,
-    width,
-    resizable: false,
-    frame: false,
-    fullscreenable: true,
-    focusable: true,
-    // backgroundColor: "black",
-    webPreferences: {
-      // sandbox: true,
-      nodeIntegration: false, // is default value after Electron v5
-      contextIsolation: true, // protect against prototype pollution
-      // enableRemoteModule: false, // turn off remote
-    },
-    // kiosk: true,
-    // fullscreen: true,
-  });
-  // win.webContents.focus();
+  // const window2 =
+  const win = createOfflineWindow(1000, 1200);
+  win.webContents.focus();
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
@@ -59,7 +40,7 @@ const program = async (showDevtools = true) => {
     }, 1000);
   });
   win.show();
-  const win2 = createNrkWindow(win);
+  const win2 = createOnlineWindow(600, 800, win);
   setTimeout(() => {
     win2.show();
     setTimeout(() => {

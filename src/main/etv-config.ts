@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "fs";
-import { Config } from "./types";
+import { Config } from "../types";
 
 export const createConfigDb = (path: string) => {
   const write = (data: Config) => {

@@ -6,7 +6,7 @@
     "clean": "rm -rf dist",
     "dev": "npm run build && npm run electron",
     "tsc:watch": "tsc --watch --noemit",
-    "electron": "../../electron --url=https://google.com username=david password=secret",
+    "electron": "../../electron --trace-warnings --url=https://google.com username=david password=secret",
     "build:renderer": "esbuild src/renderer.ts --bundle --sourcemap --target=chrome58 --outfile=dist/renderer.js",
     "build:main": "esbuild src/main.ts --bundle --sourcemap --platform=node --external:electron --outfile=dist/main.js",
     "build": "npm run clean && npm run build:main && npm run build:renderer"

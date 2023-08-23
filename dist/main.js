@@ -23,7 +23,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 
 // src/main.ts
-var import_electron = require("electron");
+var import_electron2 = require("electron");
 
 // node_modules/zod/lib/index.mjs
 var util;
@@ -3781,7 +3781,7 @@ var sendCustomEvent = (event, window) => {
 // src/main.ts
 var path = __toESM(require("path"));
 
-// src/etv-config.ts
+// src/main/etv-config.ts
 var import_fs = require("fs");
 var createConfigDb = (path2) => {
   const write = (data) => {
@@ -3847,39 +3847,27 @@ var ClockImpl = class {
 };
 var Clock = new ClockImpl();
 
-// src/main.ts
-var APP_PATH = import_electron.app.getAppPath();
-var INDEX_PATH = path.join(APP_PATH, "index.html");
-var CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
-var DB = createConfigDb(CONFIG_PATH);
-var TAG = "[ MAIN ]: ";
-var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
-var loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
-var createNrkWindow = (parent) => {
+// src/BrowserWindows.ts
+var import_electron = require("electron");
+var createOnlineWindow = (height, width, parent) => {
   const win = new import_electron.BrowserWindow({
-    height: 800,
-    width: 1200,
-    backgroundColor: "red",
+    height,
+    width,
+    backgroundColor: "gray",
     show: false,
     parent
   });
   return win;
 };
-var program = async (showDevtools = true) => {
-  await import_electron.app.whenReady();
-  const { screen } = require("electron");
-  const display = screen.getPrimaryDisplay();
-  const { height, width } = display.bounds;
-  const allDisplays = screen.getAllDisplays();
-  console.log(allDisplays);
+var createOfflineWindow = (height, width) => {
   const win = new import_electron.BrowserWindow({
     height,
     width,
     resizable: false,
-    frame: false,
+    // frame: false,
     fullscreenable: true,
     focusable: true,
-    // backgroundColor: "black",
+    backgroundColor: "black",
     webPreferences: {
       // sandbox: true,
       nodeIntegration: false,
@@ -3891,13 +3879,35 @@ var program = async (showDevtools = true) => {
     // kiosk: true,
     // fullscreen: true,
   });
+  return win;
+};
+
+// src/main.ts
+var APP_PATH = import_electron2.app.getAppPath();
+var INDEX_PATH = path.join(APP_PATH, "index.html");
+var CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
+var DB = createConfigDb(CONFIG_PATH);
+var TAG = "[ MAIN ]: ";
+var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
+var loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
+var program = async (showDevtools = true) => {
+  try {
+    await import_electron2.app.whenReady();
+  } catch (e) {
+    console.log(e);
+  }
+  const { screen } = require("electron");
+  const allDisplays = screen.getAllDisplays();
+  console.log(allDisplays);
+  const win = createOfflineWindow(1e3, 1200);
+  win.webContents.focus();
   win.on("show", () => {
     setTimeout(() => {
       console.log("FOCUS");
     }, 1e3);
   });
   win.show();
-  const win2 = createNrkWindow(win);
+  const win2 = createOnlineWindow(600, 800, win);
   setTimeout(() => {
     win2.show();
     setTimeout(() => {
@@ -3913,17 +3923,17 @@ var program = async (showDevtools = true) => {
   }).catch((e) => {
     console.log(e);
   });
-  import_electron.globalShortcut.register("CommandOrControl+n", () => {
+  import_electron2.globalShortcut.register("CommandOrControl+n", () => {
     console.log("[global shortcut] - n )");
     sendCustomEvent({ kind: "next" }, win);
   });
-  import_electron.globalShortcut.register("CommandOrControl+b", () => {
+  import_electron2.globalShortcut.register("CommandOrControl+b", () => {
     console.log("[global shortcut] - b");
     sendCustomEvent({ kind: "back" }, win);
   });
-  import_electron.globalShortcut.register("CommandOrControl+q", () => {
+  import_electron2.globalShortcut.register("CommandOrControl+q", () => {
     console.log("[global shortcut] - escape");
-    import_electron.app.quit();
+    import_electron2.app.quit();
   });
   setInterval(() => {
     sendCustomEvent({ kind: "tick" }, win);
@@ -3936,7 +3946,7 @@ program(true).then(() => {
 }).catch((e) => {
   console.log(e);
 });
-import_electron.app.on("window-all-closed", () => {
-  import_electron.app.quit();
+import_electron2.app.on("window-all-closed", () => {
+  import_electron2.app.quit();
 });
 //# sourceMappingURL=main.js.map
