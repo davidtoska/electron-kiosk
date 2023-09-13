@@ -1,5 +1,45 @@
 {
-  "username": "username if that is needed.",
-  "password": "password if that is needed.",
-  "baseUrl": "https://google.com?delete-the-string-template-and-rename-these-values."
+  "baseUrl": "https://google.com",
+  "splashScreenMessage": "Hello World",
+  "splashScreenColor": "#000000",
+  "userGestureTickHz": 500,
+  "ack": {
+    "ackString": "google-is-running",
+    "required": "once",
+    "timeoutAndReload": 15000
+  },
+  "shortCuts": [
+    {
+      "key": "CommandOrControl+n",
+      "message": "next",
+      "action": "customEvent"
+    },
+    {
+      "key": "CommandOrControl+b",
+      "message": "back",
+      "action": "customEvent"
+    },
+    {
+      "key": "CommandOrControl+n",
+      "message": "",
+      "action": "quit"
+    },
+    {
+      "key": "CommandOrControl+r",
+      "action": "reload",
+      "message": ""
+    }
+  ],
+  "webContentData": {
+    "deliver": "at-least-once",
+    "hz": 1000,
+    "openDevTools": false,
+    "showFrame": false,
+    "data": {
+      "kioskId": "xyz",
+      "kioskName": "Kiosk 1",
+      "kioskLocation": "Oslo",
+      "kioskStatus": "require on-site service"
+    }
+  }
 }

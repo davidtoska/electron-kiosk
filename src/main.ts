@@ -1,97 +1,118 @@
 import { app, globalShortcut } from "electron";
-import { sendCustomEvent } from "./main-event";
+import {} from "./main-event";
 import * as path from "path";
-import { createConfigDb } from "./main/etv-config";
 
-import { Clock } from "./clock";
-import { createOfflineWindow, createOnlineWindow } from "./BrowserWindows";
+import { Uptime } from "./main/uptime";
+import { FILE_TAG, Logger } from "./logger/file-logger";
+
+import { createSystemWindow, SystemWindowParams } from "./main/system-window";
+import { createWebWindow, WebWindowParams } from "./main/web/web-window";
+import { Config } from "./config";
+const MAIN: FILE_TAG = " MAIN: ";
+
+Logger.log(MAIN + "Starting...");
 
 const APP_PATH = app.getAppPath();
-const INDEX_PATH = path.join(APP_PATH, "index.html");
 const CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
-const DB = createConfigDb(CONFIG_PATH);
-const TAG = "[ MAIN ]: ";
+const INDEX_PATH = path.join(APP_PATH, "index.html");
+const WEB_WINDOW_LOAD_DELAY = 1000;
 
-const { baseUrl, username, password } = DB.readOrThrow();
-const loadUrl = baseUrl + "?" + "uid=" + username + "&secret=" + password;
+const config = Config.parseOrThrow(CONFIG_PATH);
+Logger.log(MAIN + "CONFIG: " + JSON.stringify(config));
 
-const program = async (showDevtools = true) => {
+const TICK_INTERVAL = config.userGestureTickHz;
+
+const shortcuts = config.shortCuts;
+
+const beforeQuit = new Set<() => void>();
+const quit = () => {
+  beforeQuit.forEach((f) => f());
+  app.quit();
+};
+// const cleanup =
+
+const program = async () => {
   try {
     await app.whenReady();
+    Logger.log(MAIN + "APP READY IN: " + Uptime.msStr());
   } catch (e) {
     console.log(e);
+    Logger.error(MAIN + "APP READY ERROR: " + e);
   }
-
   const { screen } = require("electron");
-  // const display = screen.getPrimaryDisplay();
-  // const { height, width } = display.bounds;
-  const allDisplays = screen.getAllDisplays();
-  console.log(allDisplays);
-  // const window2 =
-  const win = createOfflineWindow(1000, 1200);
-  win.webContents.focus();
-  win.on("show", () => {
-    setTimeout(() => {
-      console.log("FOCUS");
+  const display = screen.getPrimaryDisplay();
+  const { height, width } = display.bounds;
+  const systemWindowParams: SystemWindowParams = {
+    height,
+    width,
+    splashScreenMessage: config.splashScreenMessage,
+    indexPath: INDEX_PATH,
+  };
 
-      // win.setKiosk(true);
-      // win.setFullScreen(true);
-      // win.webContents.focus();
-    }, 1000);
-  });
-  win.show();
-  const win2 = createOnlineWindow(600, 800, win);
+  const system = createSystemWindow(systemWindowParams);
+  const webWindowParams: WebWindowParams = {
+    height,
+    width,
+    ack: config.ack,
+    webContentData: config.webContentData,
+    parent: system.win,
+    openDevTools: config.webContentData.openDevTools,
+    showFrame: config.webContentData.showFrame,
+  };
+  const webWindow = createWebWindow(webWindowParams);
   setTimeout(() => {
-    win2.show();
+    webWindow.show();
     setTimeout(() => {
-      win2.loadURL(loadUrl, {});
-    }, 5000);
-  }, 10000);
-  if (showDevtools) {
-    win.webContents.openDevTools();
+      webWindow.loadUrl(config.baseUrl);
+    }, 10);
+  }, WEB_WINDOW_LOAD_DELAY);
+
+  if (config.webContentData.openDevTools) {
+    system.openDevTools();
+    Logger.log(MAIN + "OPENED DEVTOOLS FOR SYSTEM WINDOW");
   }
 
-  sendCustomEvent({ kind: "init", password, baseUrl, username }, win);
+  /**
+   * Register shortcuts:
+   * e.g.: { key: "CommandOrControl+q", message: "escape", action: "quit" },
+   */
+  shortcuts.forEach((shortcut) => {
+    const { message, key, action } = shortcut;
+    globalShortcut.register(key, () => {
+      if (action === "quit") {
+        quit();
+        return;
+      }
+      if (action === "reload") {
+        webWindow.loadUrl(config.baseUrl);
+      }
 
-  win
-    .loadFile(INDEX_PATH)
-    .then(() => {
-      sendCustomEvent({ kind: "init", password, baseUrl, username }, win);
-    })
-    .catch((e) => {
-      console.log(e);
+      if (action === "customEvent") {
+        webWindow.sendMessage({ kind: "keyboard", message });
+      }
     });
 
-  globalShortcut.register("CommandOrControl+n", () => {
-    console.log("[global shortcut] - n )");
-    sendCustomEvent({ kind: "next" }, win);
+    Logger.log(MAIN + "Register shortcut ", shortcut);
   });
 
-  globalShortcut.register("CommandOrControl+b", () => {
-    console.log("[global shortcut] - b");
-    sendCustomEvent({ kind: "back" }, win);
-  });
+  const tickRef = setInterval(() => {
+    webWindow.tick();
+  }, TICK_INTERVAL);
+  beforeQuit.add(() => clearInterval(tickRef));
 
-  globalShortcut.register("CommandOrControl+q", () => {
-    console.log("[global shortcut] - escape");
-    app.quit();
-  });
-
-  setInterval(() => {
-    sendCustomEvent({ kind: "tick" }, win);
-  }, 1000);
+  Logger.log(MAIN + "Started with tick interval: " + TICK_INTERVAL);
 };
 
-program(true)
+program()
   .then(() => {
-    console.log("STARTED.");
-    const loadTime = Clock.sinceT0MilliAsString();
-    console.log(TAG + " program load: " + loadTime);
+    const loadTime = Uptime.msStr();
+    Logger.info(MAIN + " program load: " + loadTime);
   })
   .catch((e) => {
     console.log(e);
   });
 
 app.on("window-all-closed", () => {
-  app.quit();
+  Logger.info("WINDOW ALL CLOSED");
+  quit();
 });

@@ -23,7 +23,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 
 // src/main.ts
-var import_electron2 = require("electron");
+var import_electron4 = require("electron");
+var path2 = __toESM(require("path"));
 
 // node_modules/zod/lib/index.mjs
 var util;
@@ -206,8 +207,8 @@ var ZodError = class extends Error {
       return issue.message;
     };
     const fieldErrors = { _errors: [] };
-    const processError = (error) => {
-      for (const issue of error.issues) {
+    const processError = (error2) => {
+      for (const issue of error2.issues) {
         if (issue.code === "invalid_union") {
           issue.unionErrors.map(processError);
         } else if (issue.code === "invalid_return_type") {
@@ -264,8 +265,8 @@ var ZodError = class extends Error {
   }
 };
 ZodError.create = (issues) => {
-  const error = new ZodError(issues);
-  return error;
+  const error2 = new ZodError(issues);
+  return error2;
 };
 var errorMap = (issue, _ctx) => {
   let message;
@@ -373,8 +374,8 @@ function getErrorMap() {
   return overrideErrorMap;
 }
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path3, errorMaps, issueData } = params;
+  const fullPath = [...path3, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -473,11 +474,11 @@ var errorUtil;
   errorUtil2.toString = (message) => typeof message === "string" ? message : message === null || message === void 0 ? void 0 : message.message;
 })(errorUtil || (errorUtil = {}));
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path3, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path3;
     this._key = key;
   }
   get path() {
@@ -503,8 +504,8 @@ var handleResult = (ctx, result) => {
       get error() {
         if (this._error)
           return this._error;
-        const error = new ZodError(ctx.common.issues);
-        this._error = error;
+        const error2 = new ZodError(ctx.common.issues);
+        this._error = error2;
         return this._error;
       }
     };
@@ -2905,7 +2906,7 @@ var ZodFunction = class _ZodFunction extends ZodType {
       });
       return INVALID;
     }
-    function makeArgsIssue(args, error) {
+    function makeArgsIssue(args, error2) {
       return makeIssue({
         data: args,
         path: ctx.path,
@@ -2917,11 +2918,11 @@ var ZodFunction = class _ZodFunction extends ZodType {
         ].filter((x) => !!x),
         issueData: {
           code: ZodIssueCode.invalid_arguments,
-          argumentsError: error
+          argumentsError: error2
         }
       });
     }
-    function makeReturnsIssue(returns, error) {
+    function makeReturnsIssue(returns, error2) {
       return makeIssue({
         data: returns,
         path: ctx.path,
@@ -2933,7 +2934,7 @@ var ZodFunction = class _ZodFunction extends ZodType {
         ].filter((x) => !!x),
         issueData: {
           code: ZodIssueCode.invalid_return_type,
-          returnTypeError: error
+          returnTypeError: error2
         }
       });
     }
@@ -2942,15 +2943,15 @@ var ZodFunction = class _ZodFunction extends ZodType {
     if (this._def.returns instanceof ZodPromise) {
       const me = this;
       return OK(async function(...args) {
-        const error = new ZodError([]);
+        const error2 = new ZodError([]);
         const parsedArgs = await me._def.args.parseAsync(args, params).catch((e) => {
-          error.addIssue(makeArgsIssue(args, e));
-          throw error;
+          error2.addIssue(makeArgsIssue(args, e));
+          throw error2;
         });
         const result = await Reflect.apply(fn, this, parsedArgs);
         const parsedReturns = await me._def.returns._def.type.parseAsync(result, params).catch((e) => {
-          error.addIssue(makeReturnsIssue(result, e));
-          throw error;
+          error2.addIssue(makeReturnsIssue(result, e));
+          throw error2;
         });
         return parsedReturns;
       });
@@ -3743,68 +3744,38 @@ var z = /* @__PURE__ */ Object.freeze({
   ZodError
 });
 
-// src/types.ts
-var baseUrl = z.string().url();
-var username = z.string().nonempty("Username can not be empty");
-var password = z.string().nonempty("Password can not be empty");
-var Config = z.object({
-  baseUrl,
-  username,
-  password
-});
-
-// src/main-event.ts
-var NextEvent = z.object({ kind: z.literal("next") });
-var BackEvent = z.object({ kind: z.literal("back") });
-var TickEvent = z.object({ kind: z.literal("tick") });
-var InitEvent = z.object({
-  kind: z.literal("init"),
-  username,
-  password,
-  baseUrl
-});
-var MainEvent = z.union([NextEvent, BackEvent, InitEvent, TickEvent]);
-var EVENTS_FROM_MAIN_CHANNEL = "eventFromMain";
-var sendCustomEvent = (event, window) => {
-  const asJson = JSON.stringify(event);
-  const code = `
-    (function () {
-        const customEvent = new CustomEvent("${EVENTS_FROM_MAIN_CHANNEL}", { detail: ${asJson}});
-        window.dispatchEvent(customEvent);
-     })();`;
-  window.webContents.executeJavaScript(code, true).then(() => {
-  }).catch((e) => {
-    console.log(e);
-  });
-};
-
-// src/main.ts
-var path = __toESM(require("path"));
-
-// src/main/etv-config.ts
-var import_fs = require("fs");
-var createConfigDb = (path2) => {
-  const write = (data) => {
-    const json = JSON.stringify(data, null, 4);
-    (0, import_fs.writeFileSync)(path2, json, {});
-  };
-  const readOrThrow = () => {
-    const data = (0, import_fs.readFileSync)(path2).toString();
-    const parsed = JSON.parse(data);
-    const result = Config.parse(parsed);
-    return result;
-  };
-  return {
-    write,
-    readOrThrow
-  };
-};
-
 // src/timestamp.ts
 var timestamp = z.number().positive("A timestamp must be positive").brand("TIMESTAMP");
 var Timestamp;
 ((Timestamp2) => {
   Timestamp2.now = () => Date.now();
+  Timestamp2.nowStr = () => {
+    const date = /* @__PURE__ */ new Date();
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const seconds = date.getSeconds().toString().padStart(2, "0");
+    const str = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    return str;
+  };
+  Timestamp2.time24 = () => {
+    const date = /* @__PURE__ */ new Date();
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const seconds = date.getSeconds().toString().padStart(2, "0");
+    const str = `${hours}:${minutes}:${seconds}`;
+    return str;
+  };
+  Timestamp2.dateYYYYMMDD = (separator = "-") => {
+    const date = /* @__PURE__ */ new Date();
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const str = [year, month, day].join(separator);
+    return str;
+  };
   Timestamp2.diff = (first, last) => {
     const result = Math.abs(first - last);
     return result;
@@ -3826,127 +3797,559 @@ var Timestamp;
   };
 })(Timestamp || (Timestamp = {}));
 
-// src/clock.ts
-var ClockImpl = class {
-  constructor() {
-    this.t0 = Timestamp.now();
-  }
-  sinceT0Sec() {
-    return this.sinceT0Milli() / 1e3;
-  }
-  sinceT0SecAsString() {
-    const sec = this.sinceT0Sec();
-    return sec + " s.";
-  }
-  sinceT0Milli() {
-    return Timestamp.diffNow(this.t0);
-  }
-  sinceT0MilliAsString() {
-    return Timestamp.diffNow(this.t0) + " ms.";
-  }
-};
-var Clock = new ClockImpl();
+// src/main/uptime.ts
+var t0 = Timestamp.now();
+var ms = () => Timestamp.diffNow(t0);
+var sec = () => ms() / 1e3;
+var secStr = () => sec() + " s.";
+var msStr = () => ms() + " ms.";
+var Uptime = Object.freeze({
+  t0,
+  ms,
+  sec,
+  secStr,
+  msStr
+});
 
-// src/BrowserWindows.ts
+// src/logger/file-logger.ts
 var import_electron = require("electron");
-var createOnlineWindow = (height, width, parent) => {
-  const win = new import_electron.BrowserWindow({
-    height,
-    width,
-    backgroundColor: "gray",
-    show: false,
-    parent
-  });
-  return win;
+var fs = __toESM(require("fs"));
+var path = require("path");
+var appPath = import_electron.app.getAppPath();
+var TAG = " FILE LOGGER: ";
+var logPath = path.join(appPath, "logs");
+if (!fs.existsSync(logPath)) {
+  fs.mkdirSync(logPath);
+  console.log("CREATED LOGS FOLDER");
+}
+var logFilePath = path.join(logPath, "log.txt");
+if (!fs.existsSync(logFilePath)) {
+  fs.writeFileSync(logFilePath, "");
+  console.log("CREATED LOG FILE");
+}
+var LogData = {
+  is: (obj) => {
+    if (typeof obj !== "object") {
+      return false;
+    }
+    if (obj === null) {
+      return false;
+    }
+    if (Array.isArray(obj)) {
+      return false;
+    }
+    const entries = Object.entries(obj);
+    let isValid2 = true;
+    entries.forEach(([_, value]) => {
+      const notString = typeof value !== "string";
+      const notNumber = typeof value !== "number";
+      const notBoolean = typeof value !== "boolean";
+      if (notString && notNumber && notBoolean) {
+        isValid2 = false;
+      }
+    });
+    return isValid2;
+  }
 };
-var createOfflineWindow = (height, width) => {
-  const win = new import_electron.BrowserWindow({
+var createLogEntry = (level) => {
+  return (message, logData) => {
+    const data = LogData.is(logData) ? logData : {};
+    const upTime = Uptime.sec() + "s";
+    const date = Timestamp.dateYYYYMMDD();
+    const time = Timestamp.time24();
+    return {
+      date,
+      time,
+      level,
+      upTime,
+      message,
+      data
+    };
+  };
+};
+var createErrorLogEntry = createLogEntry("error");
+var createWarnLogEntry = createLogEntry("warn");
+var createInfoLogEntry = createLogEntry("info");
+var createLogLogEntry = createLogEntry("log");
+var minLengthStr = (str, minLength) => {
+  if (str.length < minLength) {
+    return str.padEnd(minLength);
+  }
+  return str;
+};
+var padStr = (str, totalLen) => {
+  const diff = totalLen - str.length;
+  if (diff <= 0)
+    return str;
+  const left = Math.floor(diff / 2);
+  const right = Math.ceil(diff / 2);
+  const leftPad = " ".repeat(left);
+  const rightPad = " ".repeat(right);
+  return leftPad + str + rightPad;
+};
+var FileLogger = class {
+  constructor() {
+    this.path = path.join(logPath, "log.txt");
+    this.logStream = fs.createWriteStream(this.path, { flags: "a" });
+  }
+  error(message, data) {
+    const entry = createErrorLogEntry(message, data);
+    this.writeLogEntry(entry);
+  }
+  info(message, data) {
+    const entry = createInfoLogEntry(message, data);
+    this.writeLogEntry(entry);
+  }
+  log(message, data) {
+    const entry = createLogLogEntry(message, data);
+    this.writeLogEntry(entry);
+  }
+  warn(message, data) {
+    const entry = createWarnLogEntry(message, data);
+    this.writeLogEntry(entry);
+  }
+  writeLogEntry(entry) {
+    const { date, time, message } = entry;
+    const up = padStr(entry.upTime, 16);
+    const level = minLengthStr(entry.level, 5);
+    const entries = Object.entries(entry.data);
+    const line = [date, time, up, level, message];
+    let lineStr = line.join("  |  ");
+    if (entries.length > 0) {
+      const json = JSON.stringify(entry.data, null);
+      lineStr = lineStr.concat(`, ${json}`);
+    }
+    this.logStream.write(lineStr + "\n");
+  }
+};
+var Logger = new FileLogger();
+Logger.log(TAG + "Logger created");
+
+// src/main/system-window.ts
+var import_electron2 = require("electron");
+
+// src/main-event.ts
+var SYSTEM_DATA_EVENT_NAME = "systemData";
+var SystemData = z.object({ message: z.string() });
+var WEB_CONTENT_EVENT_NAME = "kioskRuntime";
+var sendCustomEvent = (event, window, eventName) => {
+  if (window.isDestroyed()) {
+    return false;
+  }
+  const asJson = JSON.stringify(event);
+  const code = `
+    (function () {
+        const customEvent = new CustomEvent("${eventName}", { detail: ${asJson}});
+        window.dispatchEvent(customEvent);
+     })();`;
+  window.webContents.executeJavaScript(code, true).then(() => {
+  }).catch((e) => {
+    console.log(e);
+  });
+  return true;
+};
+var sendSystemWindowMessage = (event, window) => {
+  sendCustomEvent(event, window, SYSTEM_DATA_EVENT_NAME);
+};
+var sendWebWindowMessage = (message, window) => {
+  sendCustomEvent(message, window, WEB_CONTENT_EVENT_NAME);
+};
+
+// src/constants.ts
+var C = {
+  FOCUS_DELAY_SYSTEM_WINDOW: 100
+  // Path: src/constants.ts
+};
+
+// src/main/system-window.ts
+var TAG2 = "SYSTEM-WINDOW: ";
+var createSystemWindow = (params) => {
+  const { height, width, splashScreenMessage, indexPath } = params;
+  const win = new import_electron2.BrowserWindow({
     height,
     width,
     resizable: false,
-    // frame: false,
+    frame: params.showFrame,
     fullscreenable: true,
     focusable: true,
     backgroundColor: "black",
     webPreferences: {
-      // sandbox: true,
+      sandbox: true,
+      devTools: params.openDevTools,
       nodeIntegration: false,
       // is default value after Electron v5
       contextIsolation: true
       // protect against prototype pollution
-      // enableRemoteModule: false, // turn off remote
-    }
-    // kiosk: true,
-    // fullscreen: true,
+    },
+    kiosk: true,
+    fullscreen: true
   });
-  return win;
+  win.webContents.on("did-finish-load", () => {
+    Logger.info(TAG2 + "Did finish load");
+  });
+  win.closable = false;
+  win.webContents.on("did-fail-load", (_event, _webContents) => {
+    Logger.error(TAG2 + " Did fail load");
+  });
+  win.webContents.on("unresponsive", () => {
+    Logger.error(TAG2 + "Unresponsive");
+  });
+  win.webContents.on("dom-ready", () => {
+    Logger.error(TAG2 + "DOM READY");
+  });
+  win.on("show", () => {
+    setTimeout(() => {
+      win.setKiosk(true);
+      win.setFullScreen(true);
+    }, C.FOCUS_DELAY_SYSTEM_WINDOW);
+  });
+  win.loadFile(indexPath).then(() => {
+    Logger.info(TAG2 + "Loaded browser window - " + indexPath);
+    sendSystemWindowMessage({ message: splashScreenMessage }, win);
+  }).catch((e) => {
+    console.log(e);
+    Logger.error(TAG2 + "Error loading browser window - " + indexPath);
+  });
+  const show = () => {
+    win.show();
+    win.focus();
+  };
+  const openDevTools = () => {
+    Logger.info(TAG2 + "Opening dev tools");
+    console.log("Opening dev tools");
+    win.webContents.openDevTools();
+  };
+  return { win, show, openDevTools };
+};
+
+// src/main/web/web-window.ts
+var import_electron3 = require("electron");
+
+// src/main/web/web-window-state.ts
+var preload = () => ({ kind: "preload" });
+var loading = (url, loadStart) => ({
+  kind: "loading",
+  url,
+  loadStart
+});
+var loaded = (url, loadStart) => {
+  const loadEnd = Timestamp.now();
+  const loadTime = Timestamp.diff(loadStart, loadEnd);
+  const loaded2 = {
+    kind: "loaded",
+    url,
+    loadEnd,
+    loadTime,
+    lastAck: false
+  };
+  return loaded2;
+};
+var checkReloadRequired = (state2, ack) => {
+  const lim = ack.timeoutAndReload;
+  const mode = ack.required;
+  if (mode === "never")
+    return false;
+  if (state2.kind === "preload")
+    return false;
+  if (state2.kind === "loading") {
+    const loadingTimedOut = Timestamp.diffNow(state2.loadStart) > lim;
+    return loadingTimedOut ? {
+      url: state2.url,
+      reason: "[ RELOAD_REASON ]: The browser-window has loaded for too long: "
+    } : false;
+  }
+  if (state2.kind === "error") {
+    const retryAfter = 5e3;
+    return Timestamp.diffNow(state2.errorAt) > retryAfter ? {
+      url: state2.url,
+      reason: "[ RELOAD_REASON ]: Try to reload after 5 seconds of error-state."
+    } : false;
+  }
+  const loadTimeout = Timestamp.diffNow(state2.loadEnd) > lim;
+  if (!loadTimeout)
+    return false;
+  const ac = state2.lastAck;
+  if (!ac)
+    return {
+      url: state2.url,
+      reason: "[ RELOAD_REASON ]: The webContent has loaded, but no ack has been registered. ()"
+    };
+  const sinceLastAck = Timestamp.diffNow(ac);
+  const ackTimedOut = sinceLastAck > lim;
+  return mode === "always" && ackTimedOut ? {
+    url: state2.url,
+    reason: " [ RELOAD_REASON ]: The last ack came " + sinceLastAck + " ms ago. Will reload, since ack is required always."
+  } : false;
+};
+var error = (url, error2) => ({
+  kind: "error",
+  url,
+  error: error2,
+  errorAt: Timestamp.now()
+});
+var WS = {
+  checkReloadRequired,
+  preload,
+  loaded,
+  loading,
+  error
+};
+
+// src/main/web/web-window.ts
+var state = WS.preload();
+var TAG3 = "WEB-WINDOW: ";
+var createWebWindow = (params) => {
+  state = WS.preload();
+  const { height, width, ack, webContentData, parent, showFrame } = params;
+  const win = new import_electron3.BrowserWindow({
+    height,
+    width,
+    frame: showFrame,
+    resizable: false,
+    fullscreenable: true,
+    focusable: true,
+    backgroundColor: "gray",
+    show: false,
+    parent,
+    webPreferences: {
+      sandbox: true,
+      nodeIntegration: false,
+      // is default value after Electron v5
+      contextIsolation: true
+      // protect against prototype pollution
+    }
+  });
+  const show = () => {
+    win.show();
+    win.focus();
+    win.moveTop();
+  };
+  win.on("unresponsive", () => {
+    Logger.error(TAG3 + "unresponsive");
+  });
+  win.webContents.on("did-finish-load", () => {
+    Logger.info(TAG3 + "Did finish load");
+  });
+  win.webContents.on("did-fail-load", (_ev, _web) => {
+    Logger.error(TAG3 + "Did fail load");
+  });
+  win.webContents.on("dom-ready", () => {
+    Logger.error(TAG3 + "DOM READY");
+  });
+  win.webContents.on("console-message", (_a, _b, message) => {
+    if (message === ack.ackString) {
+      if (state.kind === "loaded") {
+        state.lastAck = Timestamp.now();
+      } else {
+        Logger.warn(
+          TAG3 + "INVALID STATE: Ack received but not in loaded state"
+        );
+      }
+    }
+  });
+  win.on("show", () => {
+    Logger.info(TAG3 + "SHOW");
+    setTimeout(() => {
+      win.setKiosk(true);
+      win.setFullScreen(true);
+      win.moveTop();
+    }, C.FOCUS_DELAY_SYSTEM_WINDOW);
+  });
+  const tryToSendTick = () => {
+    const data = webContentData.data;
+    if (state.kind === "loaded") {
+      sendWebWindowMessage({ kind: "tick", data }, win);
+      return true;
+    }
+    return false;
+  };
+  const loadUrl = (url) => {
+    if (win.isDestroyed()) {
+      return;
+    }
+    const loadStart = Timestamp.now();
+    state = WS.loading(url, loadStart);
+    win.loadURL(url, {}).then(() => {
+      state = WS.loaded(url, loadStart);
+      Logger.info("LOADED: " + url);
+    }).catch((e) => {
+      console.log(e);
+      console.log(e);
+      console.log(e);
+      console.log(e);
+      const m = typeof e.message === "string" ? e.message : "unknown-reason why url could not be loaded " + url;
+      state = WS.error(url, m);
+      Logger.error("Could not load url: " + url + " error-message: " + m);
+    });
+  };
+  const hide = () => {
+    win.hide();
+  };
+  const tick = () => {
+    let reloadNeeded = WS.checkReloadRequired(state, ack);
+    if (reloadNeeded) {
+      loadUrl(reloadNeeded.url);
+      Logger.warn("Reloading browser-window ", reloadNeeded);
+    } else {
+      tryToSendTick();
+    }
+  };
+  const sendMessage = (message) => {
+    if (state.kind === "loaded") {
+      sendWebWindowMessage(message, win);
+    }
+  };
+  return Object.freeze({ sendMessage, show, hide, tick, loadUrl });
+};
+
+// src/config.ts
+var import_fs = require("fs");
+var primitiveRecord = z.record(
+  z.union([z.string(), z.number(), z.boolean()])
+);
+var shortCutAction = z.union([
+  z.literal("reload"),
+  z.literal("quit"),
+  z.literal("customEvent")
+]);
+var ConfigParser = z.object({
+  baseUrl: z.string(),
+  splashScreenMessage: z.string(),
+  userGestureTickHz: z.number().min(10),
+  ack: z.object({
+    ackString: z.string().nonempty(),
+    required: z.union([
+      z.literal("once"),
+      z.literal("always"),
+      z.literal("never")
+    ]),
+    timeoutAndReload: z.number().min(1e3)
+  }),
+  shortCuts: z.array(
+    z.object({
+      key: z.string().nonempty(),
+      message: z.string(),
+      action: shortCutAction
+    })
+  ),
+  webContentData: z.object({
+    deliver: z.union([z.literal("at-least-once"), z.literal("always")]),
+    hz: z.number().min(10),
+    data: primitiveRecord,
+    openDevTools: z.boolean().default(false),
+    showFrame: z.boolean().default(false)
+  })
+});
+var parseOrThrow = (path3) => {
+  const data = (0, import_fs.readFileSync)(path3).toString();
+  const jsonParsed = JSON.parse(data);
+  const parsed = ConfigParser.parse(jsonParsed);
+  const {
+    baseUrl,
+    ack,
+    shortCuts,
+    splashScreenMessage,
+    userGestureTickHz,
+    webContentData
+  } = parsed;
+  const _config = {
+    baseUrl,
+    shortCuts,
+    userGestureTickHz,
+    ack,
+    splashScreenMessage,
+    webContentData
+  };
+  return _config;
+};
+var Config = {
+  parseOrThrow
 };
 
 // src/main.ts
-var APP_PATH = import_electron2.app.getAppPath();
-var INDEX_PATH = path.join(APP_PATH, "index.html");
-var CONFIG_PATH = path.join(APP_PATH, "iframe.config.json");
-var DB = createConfigDb(CONFIG_PATH);
-var TAG = "[ MAIN ]: ";
-var { baseUrl: baseUrl2, username: username2, password: password2 } = DB.readOrThrow();
-var loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
-var program = async (showDevtools = true) => {
+var MAIN = " MAIN: ";
+Logger.log(MAIN + "Starting...");
+var APP_PATH = import_electron4.app.getAppPath();
+var CONFIG_PATH = path2.join(APP_PATH, "iframe.config.json");
+var INDEX_PATH = path2.join(APP_PATH, "index.html");
+var WEB_WINDOW_LOAD_DELAY = 1e3;
+var config = Config.parseOrThrow(CONFIG_PATH);
+Logger.log(MAIN + "CONFIG: " + JSON.stringify(config));
+var TICK_INTERVAL = config.userGestureTickHz;
+var shortcuts = config.shortCuts;
+var beforeQuit = /* @__PURE__ */ new Set();
+var quit = () => {
+  beforeQuit.forEach((f) => f());
+  import_electron4.app.quit();
+};
+var program = async () => {
   try {
-    await import_electron2.app.whenReady();
+    await import_electron4.app.whenReady();
+    Logger.log(MAIN + "APP READY IN: " + Uptime.msStr());
   } catch (e) {
     console.log(e);
+    Logger.error(MAIN + "APP READY ERROR: " + e);
   }
   const { screen } = require("electron");
-  const allDisplays = screen.getAllDisplays();
-  console.log(allDisplays);
-  const win = createOfflineWindow(1e3, 1200);
-  win.webContents.focus();
-  win.on("show", () => {
-    setTimeout(() => {
-      console.log("FOCUS");
-    }, 1e3);
-  });
-  win.show();
-  const win2 = createOnlineWindow(600, 800, win);
+  const display = screen.getPrimaryDisplay();
+  const { height, width } = display.bounds;
+  const systemWindowParams = {
+    height,
+    width,
+    splashScreenMessage: config.splashScreenMessage,
+    indexPath: INDEX_PATH
+  };
+  const system = createSystemWindow(systemWindowParams);
+  const webWindowParams = {
+    height,
+    width,
+    ack: config.ack,
+    webContentData: config.webContentData,
+    parent: system.win,
+    openDevTools: config.webContentData.openDevTools,
+    showFrame: config.webContentData.showFrame
+  };
+  const webWindow = createWebWindow(webWindowParams);
   setTimeout(() => {
-    win2.show();
+    webWindow.show();
     setTimeout(() => {
-      win2.loadURL(loadUrl, {});
-    }, 5e3);
-  }, 1e4);
-  if (showDevtools) {
-    win.webContents.openDevTools();
+      webWindow.loadUrl(config.baseUrl);
+    }, 10);
+  }, WEB_WINDOW_LOAD_DELAY);
+  if (config.webContentData.openDevTools) {
+    system.openDevTools();
+    Logger.log(MAIN + "OPENED DEVTOOLS FOR SYSTEM WINDOW");
   }
-  sendCustomEvent({ kind: "init", password: password2, baseUrl: baseUrl2, username: username2 }, win);
-  win.loadFile(INDEX_PATH).then(() => {
-    sendCustomEvent({ kind: "init", password: password2, baseUrl: baseUrl2, username: username2 }, win);
-  }).catch((e) => {
-    console.log(e);
+  shortcuts.forEach((shortcut) => {
+    const { message, key, action } = shortcut;
+    import_electron4.globalShortcut.register(key, () => {
+      if (action === "quit") {
+        quit();
+        return;
+      }
+      if (action === "reload") {
+        webWindow.loadUrl(config.baseUrl);
+      }
+      if (action === "customEvent") {
+        webWindow.sendMessage({ kind: "keyboard", message });
+      }
+    });
+    Logger.log(MAIN + "Register shortcut ", shortcut);
   });
-  import_electron2.globalShortcut.register("CommandOrControl+n", () => {
-    console.log("[global shortcut] - n )");
-    sendCustomEvent({ kind: "next" }, win);
-  });
-  import_electron2.globalShortcut.register("CommandOrControl+b", () => {
-    console.log("[global shortcut] - b");
-    sendCustomEvent({ kind: "back" }, win);
-  });
-  import_electron2.globalShortcut.register("CommandOrControl+q", () => {
-    console.log("[global shortcut] - escape");
-    import_electron2.app.quit();
-  });
-  setInterval(() => {
-    sendCustomEvent({ kind: "tick" }, win);
-  }, 1e3);
+  const tickRef = setInterval(() => {
+    webWindow.tick();
+  }, TICK_INTERVAL);
+  beforeQuit.add(() => clearInterval(tickRef));
+  Logger.log(MAIN + "Started with tick interval: " + TICK_INTERVAL);
 };
-program(true).then(() => {
-  console.log("STARTED.");
-  const loadTime = Clock.sinceT0MilliAsString();
-  console.log(TAG + " program load: " + loadTime);
+program().then(() => {
+  const loadTime = Uptime.msStr();
+  Logger.info(MAIN + " program load: " + loadTime);
 }).catch((e) => {
   console.log(e);
 });
-import_electron2.app.on("window-all-closed", () => {
-  import_electron2.app.quit();
+import_electron4.app.on("window-all-closed", () => {
+  Logger.info("WINDOW ALL CLOSED");
+  quit();
 });
 //# sourceMappingURL=main.js.map

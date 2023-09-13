@@ -1,36 +1,54 @@
 import { BrowserWindow } from "electron";
 import { z } from "zod";
 
-import { baseUrl, password, username } from "./types";
+export type WebContentMessage =
+  | { kind: "tick"; data: Record<string, string | boolean | number> }
+  | { kind: "keyboard"; message: string };
 
-export const NextEvent = z.object({ kind: z.literal("next") });
-export type NextEvent = z.infer<typeof NextEvent>;
-export const BackEvent = z.object({ kind: z.literal("back") });
-export type BackEvent = z.infer<typeof BackEvent>;
-export const TickEvent = z.object({ kind: z.literal("tick") });
-export const InitEvent = z.object({
-  kind: z.literal("init"),
-  username,
-  password,
-  baseUrl,
-});
+export const SYSTEM_DATA_EVENT_NAME = "systemData";
 
-export type InitEvent = z.infer<typeof InitEvent>;
-export const MainEvent = z.union([NextEvent, BackEvent, InitEvent, TickEvent]);
+export const SystemData = z.object({ message: z.string() });
+export type SystemData = z.infer<typeof SystemData>;
 
-export type MainEvent = z.infer<typeof MainEvent>;
-export const EVENTS_FROM_MAIN_CHANNEL = "eventFromMain";
-export const sendCustomEvent = (event: MainEvent, window: BrowserWindow) => {
+export const WEB_CONTENT_EVENT_NAME = "kioskRuntime";
+
+const sendCustomEvent = (
+  event: Record<string, any>,
+  window: BrowserWindow,
+  eventName: string,
+): boolean => {
+  if (window.isDestroyed()) {
+    return false;
+  }
+
   const asJson = JSON.stringify(event);
   const code = `
     (function () {
-        const customEvent = new CustomEvent("${EVENTS_FROM_MAIN_CHANNEL}", { detail: ${asJson}});
+        const customEvent = new CustomEvent("${eventName}", { detail: ${asJson}});
         window.dispatchEvent(customEvent);
      })();`;
   window.webContents
     .executeJavaScript(code, true)
-    .then(() => {})
+    .then(() => {
+      // console.log("SENT");
+    })
     .catch((e: unknown) => {
       console.log(e);
     });
+
+  return true;
+};
+
+export const sendSystemWindowMessage = (
+  event: SystemData,
+  window: BrowserWindow,
+) => {
+  sendCustomEvent(event, window, SYSTEM_DATA_EVENT_NAME);
+};
+
+export const sendWebWindowMessage = (
+  message: WebContentMessage,
+  window: BrowserWindow,
+) => {
+  sendCustomEvent(message, window, WEB_CONTENT_EVENT_NAME);
 };

@@ -3635,245 +3635,60 @@
     ZodError
   });
 
-  // src/types.ts
-  var baseUrl = z.string().url();
-  var username = z.string().nonempty("Username can not be empty");
-  var password = z.string().nonempty("Password can not be empty");
-  var Config = z.object({
-    baseUrl,
-    username,
-    password
-  });
-
   // src/main-event.ts
-  var NextEvent = z.object({ kind: z.literal("next") });
-  var BackEvent = z.object({ kind: z.literal("back") });
-  var TickEvent = z.object({ kind: z.literal("tick") });
-  var InitEvent = z.object({
-    kind: z.literal("init"),
-    username,
-    password,
-    baseUrl
-  });
-  var MainEvent = z.union([NextEvent, BackEvent, InitEvent, TickEvent]);
-  var EVENTS_FROM_MAIN_CHANNEL = "eventFromMain";
+  var SYSTEM_DATA_EVENT_NAME = "systemData";
+  var SystemData = z.object({ message: z.string() });
 
-  // src/onOnlineStatusChange.ts
-  var isOnline = () => window.navigator.onLine;
-  var onlineCount = 0;
-  var tickCount = 0;
-  var ONLINE_TICK_RATE = 600;
-  var ONLINE_SETTELED_TRESHOLD = 5;
-  var _callback = (event) => {
-    console.log("NOBODY IS LISTENING FOR ONLINE CHANGE: STATUS", event);
+  // src/renderer/isOnline.ts
+  var _currentOnlineStatus = window.navigator.onLine;
+  var _cb = (_isOnline) => {
   };
-  window.addEventListener("offline", (e) => {
-    console.log("offline");
-    console.log(e);
-    _callback({ kind: "wentOffline", isOnline: false });
-  });
-  window.addEventListener("online", (e) => {
-    console.log("online");
-    console.log(e);
-    _callback({ kind: "wentOnline", isOnline: true });
-  });
-  var onOnlineStatusChange = (onchange) => {
-    _callback = onchange;
-  };
-  var ref = window.setInterval(() => {
-    tickCount = tickCount + 1;
-    if (isOnline()) {
-      onlineCount += 1;
-      if (onlineCount === ONLINE_SETTELED_TRESHOLD) {
-        _callback({ kind: "initial-online", isOnline: true });
-        window.clearInterval(ref);
-        console.log("[window.clearInterval(initialOnlineTicker)]");
+  var _diffCount = 0;
+  var HZ = 500;
+  var DIFF_TRESHOLD = 5;
+  setInterval(() => {
+    const isOnlineNow = window.navigator.onLine;
+    if (isOnlineNow !== _currentOnlineStatus) {
+      _diffCount += 1;
+      if (_diffCount >= DIFF_TRESHOLD) {
+        _diffCount = 0;
+        _currentOnlineStatus = isOnlineNow;
+        _cb(_currentOnlineStatus);
       }
+    }
+  }, HZ);
+  var onlineStatusChanged = (cb) => {
+    _cb = cb;
+    _cb(_currentOnlineStatus);
+  };
+
+  // src/renderer/system-renderer.ts
+  var onLineStatus = document.getElementById("online-status");
+  var messageEl = document.getElementById("message");
+  var renderOnlineStatus = (isOnline) => {
+    if (onLineStatus) {
+      onLineStatus.innerText = isOnline ? "" : "OFFLINE";
     } else {
-      onlineCount = 0;
-    }
-  }, ONLINE_TICK_RATE);
-
-  // src/timestamp.ts
-  var timestamp = z.number().positive("A timestamp must be positive").brand("TIMESTAMP");
-  var Timestamp;
-  ((Timestamp2) => {
-    Timestamp2.now = () => Date.now();
-    Timestamp2.diff = (first, last) => {
-      const result = Math.abs(first - last);
-      return result;
-    };
-    Timestamp2.diffNow = (timestamp2) => {
-      return (0, Timestamp2.diff)(timestamp2, (0, Timestamp2.now)());
-    };
-    Timestamp2.parse = (datetime) => {
-      if (typeof datetime !== "string")
-        return null;
-      const maybeNumber = Date.parse(datetime);
-      if (isNaN(maybeNumber)) {
-        return null;
-      }
-      if (maybeNumber < 0) {
-        return null;
-      }
-      return new Date(maybeNumber);
-    };
-  })(Timestamp || (Timestamp = {}));
-
-  // src/Iframe.ts
-  var ContentWindowOk = z.object({
-    isOk: z.literal(true),
-    timestamp
-  });
-  var ContentWindowError = z.object({
-    isOk: z.literal(false),
-    timestamp,
-    message: z.string()
-  });
-  var ContentWindowMessage = z.union([ContentWindowOk, ContentWindowError]);
-  var IframeState = class {
-    constructor() {
-      this.LOAD_TIMEOUT = 6e3;
-      this.kind = "no-url";
-      this.transitionAt = Timestamp.now();
-    }
-    doReload() {
-      if (this.kind !== "loading")
-        return false;
-      const loadingTime = Timestamp.diffNow(this.transitionAt);
-      return loadingTime > this.LOAD_TIMEOUT;
-    }
-    setState(state) {
-      this.kind = state;
-      this.transitionAt = Timestamp.now();
+      console.log("NO ONLINE STATUS ELEMENT");
     }
   };
-  var Iframe = class {
-    constructor(onEventHandler) {
-      this.TAG = "[ Iframe ]:";
-      this.el = document.createElement("iframe");
-      this.state = new IframeState();
-      this.lastMessage = null;
-      this._onEventHandler = onEventHandler;
-      this._onEventHandler("CONSTRUCTOR");
-      this.el.loading = "auto";
-      this.el.classList.add("fullscreen", "iframe");
-      const initialLoadTicker = window.setInterval(() => {
-        if (this.state.doReload()) {
-          this.reloadUrl();
-          console.log(this.TAG + "Loading timed out, will reload url");
-        } else {
-        }
-      }, 300);
-      window.addEventListener("message", (ev) => {
-        const parsed = ContentWindowMessage.safeParse(ev.data);
-        if (parsed.success) {
-          const message = parsed.data;
-          if (message.isOk && this.lastMessage === null) {
-            this.lastMessage = message;
-            this.state.setState("loaded");
-            window.clearInterval(initialLoadTicker);
-            console.groupCollapsed(this.TAG + " IFRAME WEB CONTENT LOADED.");
-            console.log(message);
-            console.log("clearInterval(initialLoadTicker)");
-            console.groupEnd();
-          }
-        } else {
-          console.log(parsed.error);
-        }
-      });
-      this.el.onloadstart = (ev) => {
-        this._onEventHandler(ev);
-      };
-      this.el.onloadstart = (ev) => {
-        this._onEventHandler(ev);
-      };
-      this.el.onload = (ev) => {
-        this._onEventHandler(ev);
-      };
-      this.el.onerror = (ev) => {
-        this._onEventHandler(ev);
-      };
-    }
-    sendMessage(message) {
-      var _a;
-      (_a = this.el.contentWindow) == null ? void 0 : _a.postMessage(message, "*");
-    }
-    loadUrl(url) {
-      this.state.setState("loading");
-      this.el.src = url;
-    }
-    reloadUrl() {
-      const url = this.el.src;
-      console.groupCollapsed(this.TAG + " Iframe loading timeout. RELOADING!!");
-      console.log(url);
-      console.groupEnd();
-      this.el.src = "";
-      this.state.setState("loading");
-      setTimeout(() => {
-        this.el.src = url;
-      }, 10);
-    }
-    getHtmlElement() {
-      return this.el;
+  onlineStatusChanged(renderOnlineStatus);
+  var renderMessage = (message) => {
+    if (messageEl) {
+      messageEl.innerText = message;
+    } else {
+      console.log("NO MESSAGE ELEMENT");
     }
   };
-
-  // src/renderer.ts
-  var config = null;
-  var initialOnlineStable = false;
-  var TICK_RATE = 1e3;
-  var iframe = null;
-  onOnlineStatusChange((onlineEvent) => {
-    console.log(onlineEvent);
-    switch (onlineEvent.kind) {
-      case "initial-online":
-        initialOnlineStable = true;
-        break;
-      case "wentOffline":
-        break;
-      case "wentOnline":
-        break;
-    }
-  });
-  var initInterval = window.setInterval(() => {
-    if (!config)
-      return;
-    if (!initialOnlineStable)
-      return;
-    const { baseUrl: baseUrl2, username: username2, password: password2 } = config;
-    const loadUrl = baseUrl2 + "?uid=" + username2 + "&secret=" + password2;
-    iframe = new Iframe((ev) => {
-      console.log(ev);
-    });
-    iframe.loadUrl(loadUrl);
-    document.body.appendChild(iframe.getHtmlElement());
-    window.clearInterval(initInterval);
-  }, TICK_RATE);
-  var mainEventHandler = (event) => {
-    switch (event.kind) {
-      case "init":
-        config = event;
-        break;
-      case "next":
-        if (iframe) {
-        }
-        break;
-      case "back":
-        break;
-      case "tick":
-        break;
-    }
-  };
-  window.addEventListener(EVENTS_FROM_MAIN_CHANNEL, (ev) => {
+  console.log(messageEl);
+  window.addEventListener(SYSTEM_DATA_EVENT_NAME, (ev) => {
+    console.log(ev);
     if (ev instanceof CustomEvent) {
-      const data = ev.detail;
-      const parsed = MainEvent.safeParse(data);
+      const parsed = SystemData.safeParse(ev.detail);
       if (parsed.success) {
-        mainEventHandler(parsed.data);
+        renderMessage(parsed.data.message);
       } else {
-        console.error("UNKNOWN EVENT SENT IN EVENTS_FROM_MAIN_CHANNEL", data);
-        console.error(parsed.error);
+        console.log("COULD NOT PARSE SYSTEM DATA");
       }
     } else {
       console.log("SHOULD BE CUSTOM EVENT");
