@@ -4297,7 +4297,9 @@ var program = async () => {
     height,
     width,
     splashScreenMessage: config.splashScreenMessage,
-    indexPath: INDEX_PATH
+    indexPath: INDEX_PATH,
+    openDevTools: config.webContentData.openDevTools,
+    showFrame: config.webContentData.showFrame
   };
   const system = createSystemWindow(systemWindowParams);
   const webWindowParams = {
